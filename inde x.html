@@ -1,0 +1,758 @@
+) 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARQ Tool Hub</title>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
+
+        :root {
+            --gold: #FFD700;
+            --dark-bg: #121212;
+            --dark-surface: #1e1e1e;
+            --dark-card: #2a2a2a;
+            --light-text: #f0f0f0;
+            --gold-glow: 0 0 5px var(--gold), 0 0 10px var(--gold), 0 0 20px #b8860b;
+            --transition-speed: 0.3s;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--light-text);
+            overflow-x: hidden;
+        }
+        
+        /* --- Splash Screen --- */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--dark-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .splash-text-container {
+            display: inline-block;
+        }
+
+        #splash-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2em;
+            color: var(--gold);
+            text-shadow: var(--gold-glow);
+            border-right: .15em solid var(--gold);
+            white-space: nowrap;
+            overflow: hidden;
+            letter-spacing: .15em;
+            animation: typing 0.5s steps(12, end), blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--gold); }
+        }
+        
+        /* --- Main App --- */
+        .app-container {
+            display: none; /* Hidden until splash is gone */
+        }
+        
+        /* --- Header --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background-color: var(--dark-surface);
+            border-bottom: 1px solid var(--gold);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .menu-icon {
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--gold);
+            text-shadow: var(--gold-glow);
+        }
+
+        #search-bar {
+            width: 60%;
+            max-width: 400px;
+            padding: 0.75rem;
+            border: 1px solid var(--gold);
+            border-radius: 25px;
+            background-color: var(--dark-card);
+            color: var(--light-text);
+            font-size: 1rem;
+            outline: none;
+            box-shadow: var(--gold-glow);
+            transition: box-shadow var(--transition-speed);
+        }
+        
+        #search-bar:focus {
+            box-shadow: 0 0 8px var(--gold), 0 0 15px var(--gold);
+        }
+
+        /* --- Side Menu (Sidenav) --- */
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            background-color: rgba(18, 18, 18, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+            border-right: 1px solid var(--gold);
+        }
+
+        .sidenav a {
+            padding: 15px 25px;
+            text-decoration: none;
+            font-size: 1.5rem;
+            color: var(--light-text);
+            display: block;
+            transition: var(--transition-speed);
+        }
+        
+        .sidenav a:hover {
+            color: var(--gold);
+            text-shadow: var(--gold-glow);
+        }
+
+        .sidenav .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 2.5rem;
+        }
+
+        /* --- Main Content --- */
+        main {
+            padding: 2rem;
+        }
+
+ 
+/* TOOL GRID */
+#tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Always 3 per row */
+  gap: 1.2rem;
+  padding: 1.5rem;
+  justify-items: center;
+  align-items: stretch; /* Cards equal height */
+}
+
+/* TOOL CARD */
+.tool-card {
+  background: var(--card-bg);
+  border: 1px solid rgba(0, 150, 255, 0.6);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  text-align: center;
+  transition: var(--transition);
+  box-shadow: 0 0 10px rgba(0, 60, 200, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+
+  /* 👇 Add these lines for equal size */
+  width: 100%;
+  min-height: 195px; /* Adjust height to your liking */
+  box-sizing: border-box;;
+}
+
+/* TOOL TITLE */
+.tool-card h3 {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px #00bfff;
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0.5rem;
+  min-height: 20px;
+  letter-spacing: 1px;
+}
+
+/* TOOL IMAGE */
+.tool-card img {
+  width: 100px;
+  height: 100px;
+  border-radius: 12px;
+  margin: 0.6rem auto;
+  object-fit: contain;
+  box-shadow: 0 0 10px rgba(0, 120, 255, 0.4);
+  transition: 0.3s;
+}
+.tool-card:hover img {
+  transform: scale(1.05);
+}
+
+
+/* MODALS */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 20, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 999;
+}
+        .form-container {
+            background: rgba(20, 20, 20, 0.7);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid var(--gold);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: var(--gold-glow);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .form-container h2 {
+            color: var(--gold);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .form-container label {
+            display: block;
+            margin: 1rem 0 0.5rem;
+        }
+
+        .form-container input, .form-container select, .form-container textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--dark-surface);
+            border: 1px solid var(--gold);
+            border-radius: 5px;
+            color: var(--light-text);
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        
+        .form-container input[readonly] {
+            background-color: #333;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .form-container textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .golden-button {
+            width: 100%;
+            padding: 0.8rem;
+            margin-top: 2rem;
+            background-color: var(--gold);
+            border: none;
+            border-radius: 5px;
+            color: var(--dark-bg);
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .golden-button:hover {
+            background-color: #ffed4a;
+            box-shadow: var(--gold-glow);
+        }
+
+        .hidden { display: none; }
+        
+        /* --- Tool Player Modal --- */
+        #tool-player-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--dark-bg);
+            z-index: 3000;
+            display: none;
+        }
+
+        #tool-player-modal iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #close-tool-player {
+            position: fixed;
+            top: 15px;
+            right: 35px;
+            color: var(--gold);
+            font-size: 3rem;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            z-index: 3001;
+            text-shadow: var(--gold-glow);
+        }
+        
+/* MOBILE */
+@media (max-width: 600px) {
+  .site-title { font-size: 1.3rem; }
+  header { flex-direction: column; gap: 0.4rem; }
+  #search-bar { width: 90%; }
+  #tool-grid { grid-template-columns: repeat(2, 1fr)); gap: 0.9rem; }
+  .tool-card img { width: 85px; height: 85px; }
+  .tool-card h3 { font-size: 0.8rem; }
+}
+
+        /* --- NEW Notification Popup --- */
+        #notification-popup {
+            z-index: 5000; /* Ensure it's on top of everything */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-text-container">
+            <div id="splash-text">ARQ Tool Hub</div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Side Navigation Menu -->
+        <div id="mySidenav" class="sidenav">
+            <a href="javascript:void(0)" class="close-btn" onclick="closeNav()">&times;</a>
+            <a href="#" id="profile-menu-btn">User Profile</a>
+            <a href="#" id="upload-menu-btn">Upload Tool</a>
+            <a href="#" id="support-menu-btn">Support</a>
+        </div>
+
+        <!-- Header -->
+        <header>
+            <span class="menu-icon" onclick="openNav()">&#9776;</span>
+            <input type="text" id="search-bar" placeholder="Search for tools...">
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <div id="tool-grid">
+                <!-- Tool cards will be dynamically inserted here -->
+            </div>
+        </main>
+        
+        <!-- User Profile Modal -->
+        <div id="profile-modal" class="modal-backdrop">
+            <div class="form-container">
+                <h2>User Profile</h2>
+                <form id="profile-form">
+                    <label for="user-name">Name</label>
+                    <input type="text" id="user-name" required>
+                    <label for="user-email">Email</label>
+                    <input type="email" id="user-email" required>
+                    <button type="submit" class="golden-button">Save Profile</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload Tool Modal -->
+        <div id="upload-modal" class="modal-backdrop">
+            <div class="form-container">
+                <h2>Upload Tool</h2>
+                <form id="upload-form">
+                    <label for="tool-source-type">Tool Source Type</label>
+                    <select id="tool-source-type" required>
+                        <option value="" disabled selected>Select source type...</option>
+                        <option value="HTML Code">HTML Code</option>
+                        <option value="External Link">External Link</option>
+                    </select>
+
+                    <div id="html-code-section" class="hidden">
+                        <label for="tool-html-code">HTML Code</label>
+                        <textarea id="tool-html-code" placeholder="Paste your full HTML code here..."></textarea>
+                    </div>
+
+                    <div id="external-link-section" class="hidden">
+                        <label for="tool-external-link">External Link</label>
+                        <input type="url" id="tool-external-link" placeholder="https://example.com">
+                    </div>
+
+                    <label for="tool-title">Title</label>
+                    <input type="text" id="tool-title" required>
+
+                    <label for="tool-logo-url">Logo URL</label>
+                    <input type="url" id="tool-logo-url" required>
+
+                    <button type="submit" class="golden-button">Submit for Review</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Support Ticket Modal -->
+        <div id="support-modal" class="modal-backdrop">
+            <div class="form-container">
+                <h2>Contact Support</h2>
+                <form id="support-form">
+                    <label for="support-name">Your Name</label>
+                    <input type="text" id="support-name" readonly>
+                    <label for="support-email">Your Email</label>
+                    <input type="email" id="support-email" readonly>
+                    <label for="support-message">Message</label>
+                    <textarea id="support-message" placeholder="Please describe your issue..." required></textarea>
+                    <button type="submit" class="golden-button">Submit Ticket</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tool Player Modal -->
+        <div id="tool-player-modal">
+            <a id="close-tool-player">&times;</a>
+            <iframe id="tool-iframe"></iframe>
+        </div>
+
+        <!-- NEW Notification Popup -->
+        <div id="notification-popup" class="modal-backdrop">
+             <div class="form-container" style="max-width: 450px; text-align: center;">
+                <h2 style="font-family: 'Orbitron', sans-serif; color: var(--gold);">Notification</h2>
+                <p id="notification-popup-message" style="font-size: 1.2rem; line-height: 1.6; margin: 1.5rem 0;"></p>
+                <button id="notification-popup-button" class="golden-button">Understand</button>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        // --- IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyD9bnqhwuQEzxaQaYlW0an68iqWQfXIp5w",
+          authDomain: "ask-jarvis-cgy2x.firebaseapp.com",
+          databaseURL: "https://ask-jarvis-cgy2x-default-rtdb.firebaseio.com",
+          projectId: "ask-jarvis-cgy2x",
+          storageBucket: "ask-jarvis-cgy2x.firebasestorage.app",
+          messagingSenderId: "169989121206",
+          appId: "1:169989121206:web:5b8bb8d5f0a99766cdf217"
+        };
+        // --- END OF FIREBASE CONFIGURATION --- //
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Splash Screen Logic ---
+            const splashScreen = document.getElementById('splash-screen');
+            const appContainer = document.querySelector('.app-container');
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                splashScreen.addEventListener('transitionend', () => {
+                    splashScreen.style.display = 'none';
+                    appContainer.style.display = 'block';
+                });
+            }, 3000);
+
+            // --- Element References ---
+            const sideNav = document.getElementById('mySidenav');
+            const profileModal = document.getElementById('profile-modal');
+            const uploadModal = document.getElementById('upload-modal');
+            const supportModal = document.getElementById('support-modal');
+            const profileMenuBtn = document.getElementById('profile-menu-btn');
+            const uploadMenuBtn = document.getElementById('upload-menu-btn');
+            const supportMenuBtn = document.getElementById('support-menu-btn');
+            const profileForm = document.getElementById('profile-form');
+            const uploadForm = document.getElementById('upload-form');
+            const supportForm = document.getElementById('support-form');
+            const toolGrid = document.getElementById('tool-grid');
+            const searchBar = document.getElementById('search-bar');
+            const toolPlayerModal = document.getElementById('tool-player-modal');
+            const closeToolPlayerBtn = document.getElementById('close-tool-player');
+            const toolIframe = document.getElementById('tool-iframe');
+            
+            let allTools = []; // Cache for search functionality
+
+            // --- Navigation and Modal Logic ---
+            window.openNav = () => { sideNav.style.width = "250px"; }
+            window.closeNav = () => { sideNav.style.width = "0"; }
+            
+            const closeModalOnClickOutside = (e) => {
+                if (e.target.classList.contains('modal-backdrop')) {
+                    e.target.style.display = 'none';
+                }
+            };
+            
+            profileModal.addEventListener('click', closeModalOnClickOutside);
+            uploadModal.addEventListener('click', closeModalOnClickOutside);
+            supportModal.addEventListener('click', closeModalOnClickOutside);
+            
+            const checkProfile = () => {
+                if (!localStorage.getItem('userName') || !localStorage.getItem('userEmail')) {
+                    alert('Please set your user profile first.');
+                    profileModal.style.display = 'flex';
+                    return false;
+                }
+                return true;
+            };
+
+            profileMenuBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                profileModal.style.display = 'flex';
+                closeNav();
+            });
+
+            uploadMenuBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (checkProfile()) {
+                    uploadModal.style.display = 'flex';
+                    closeNav();
+                }
+            });
+
+            supportMenuBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (checkProfile()) {
+                    document.getElementById('support-name').value = localStorage.getItem('userName');
+                    document.getElementById('support-email').value = localStorage.getItem('userEmail');
+                    supportModal.style.display = 'flex';
+                    closeNav();
+                }
+            });
+            
+            closeToolPlayerBtn.addEventListener('click', () => {
+                toolPlayerModal.style.display = 'none';
+                toolIframe.srcdoc = ''; // Clear content
+            });
+
+            // --- User Profile Logic ---
+            const userNameInput = document.getElementById('user-name');
+            const userEmailInput = document.getElementById('user-email');
+            
+            userNameInput.value = localStorage.getItem('userName') || '';
+            userEmailInput.value = localStorage.getItem('userEmail') || '';
+            
+            profileForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                localStorage.setItem('userName', userNameInput.value.trim());
+                localStorage.setItem('userEmail', userEmailInput.value.trim());
+                profileModal.style.display = 'none';
+                alert('Profile Saved!');
+                listenForNotifications();
+                listenForGlobalNotifications();
+            });
+
+            // --- Tool Submission Logic ---
+            const sourceTypeSelect = document.getElementById('tool-source-type');
+            sourceTypeSelect.addEventListener('change', () => {
+                const selected = sourceTypeSelect.value;
+                document.getElementById('html-code-section').classList.toggle('hidden', selected !== 'HTML Code');
+                document.getElementById('external-link-section').classList.toggle('hidden', selected !== 'External Link');
+                document.getElementById('tool-html-code').required = selected === 'HTML Code';
+                document.getElementById('tool-external-link').required = selected === 'External Link';
+            });
+            
+            uploadForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const submissionData = {
+                    title: document.getElementById('tool-title').value,
+                    logoUrl: document.getElementById('tool-logo-url').value,
+                    sourceType: sourceTypeSelect.value,
+                    htmlCode: document.getElementById('tool-html-code').value,
+                    externalLink: document.getElementById('tool-external-link').value,
+                    submitterName: localStorage.getItem('userName'),
+                    submitterEmail: localStorage.getItem('userEmail'),
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                database.ref('pendingSubmissions').push(submissionData)
+                    .then(() => {
+                        alert('Tool submitted for review!');
+                        uploadForm.reset();
+                        document.getElementById('html-code-section').classList.add('hidden');
+                        document.getElementById('external-link-section').classList.add('hidden');
+                        uploadModal.style.display = 'none';
+                    })
+                    .catch(error => alert("An error occurred: " + error.message));
+            });
+
+            // --- Support Ticket Submission Logic ---
+            supportForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const ticketData = {
+                    userName: localStorage.getItem('userName'),
+                    userEmail: localStorage.getItem('userEmail'),
+                    message: document.getElementById('support-message').value.trim(),
+                    status: 'open',
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                database.ref('supportTickets').push(ticketData)
+                    .then(() => {
+                        alert('Support ticket submitted successfully!');
+                        supportForm.reset();
+                        supportModal.style.display = 'none';
+                    })
+                    .catch(error => alert("An error occurred: " + error.message));
+            });
+            
+            // --- Fetch and Display Published Tools ---
+            database.ref('items').on('value', (snapshot) => {
+                const items = snapshot.val();
+                toolGrid.innerHTML = '';
+                allTools = [];
+                if (items) {
+                    Object.keys(items).forEach(key => {
+                        const item = items[key];
+                        item.id = key;
+                        allTools.push(item);
+                    });
+                    renderTools(allTools);
+                }
+            });
+
+            function renderTools(toolArray) {
+                toolGrid.innerHTML = '';
+                toolArray.forEach(item => {
+                    toolGrid.appendChild(createToolCard(item));
+                });
+            }
+
+            function createToolCard(item) {
+                const card = document.createElement('div');
+                card.className = 'tool-card';
+                card.dataset.id = item.id;
+                card.dataset.sourceType = item.sourceType;
+                
+                if (item.sourceType === 'HTML Code') {
+                    card.dataset.htmlContent = item.htmlCode;
+                } else if (item.sourceType === 'External Link') {
+                    card.dataset.externalLink = item.externalLink;
+                }
+                
+                card.innerHTML = `
+                    <img src="${item.logoUrl}" alt="${item.title} Logo">
+                    <h3>${item.title}</h3>
+                    
+                `;
+                
+                
+                return card;
+            }
+
+            // --- Tool "Play" and Rating Logic ---
+            toolGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.tool-card');
+                if (!card) return;
+
+                if (e.target.tagName === 'LABEL') {
+                    const radio = document.getElementById(e.target.htmlFor);
+                    if (radio) localStorage.setItem(`rating-${card.dataset.id}`, radio.value);
+                    return;
+                }
+                
+                if (card.dataset.sourceType === 'HTML Code') {
+                    const fullHtml = `
+                        <style>html, body { margin:0; padding:0; height:100vh; width:100vw; overflow:hidden; box-sizing:border-box; }</style>
+                        ${card.dataset.htmlContent}
+                    `;
+                    toolIframe.srcdoc = fullHtml;
+                    toolPlayerModal.style.display = 'block';
+                } else if (card.dataset.sourceType === 'External Link') {
+                    window.open(card.dataset.externalLink, '_blank');
+                }
+            });
+
+            // --- Search Functionality ---
+            searchBar.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredTools = allTools.filter(tool => 
+                    tool.title.toLowerCase().includes(searchTerm)
+                );
+                renderTools(filteredTools);
+            });
+
+            // --- REVISED Notifications Logic ---
+            function showNotification(message) {
+                const popup = document.getElementById('notification-popup');
+                const messageElement = document.getElementById('notification-popup-message');
+                const understandButton = document.getElementById('notification-popup-button');
+
+                messageElement.textContent = message;
+                popup.style.display = 'flex';
+
+                // Set a one-time click listener for the button
+                understandButton.onclick = () => {
+                    popup.style.display = 'none';
+                };
+            }
+            
+            // Listener for individual notifications
+            let individualNotificationListener = null;
+            function listenForNotifications() {
+                const userEmail = localStorage.getItem('userEmail');
+                if (!userEmail) return;
+                
+                const sanitizedEmail = userEmail.replace(/[.#$[\]]/g, "_");
+                if (individualNotificationListener) individualNotificationListener.off();
+                
+                const userNotificationsRef = database.ref(`notifications/${sanitizedEmail}`);
+                individualNotificationListener = userNotificationsRef.on('child_added', (snapshot) => {
+                    showNotification(snapshot.val().message);
+                    snapshot.ref.remove();
+                });
+            }
+            
+            // Listener for global notifications
+            function listenForGlobalNotifications() {
+                const globalNotificationsRef = database.ref('globalNotifications');
+                globalNotificationsRef.on('child_added', (snapshot) => {
+                    const notificationId = snapshot.key;
+                    const message = snapshot.val().message;
+
+                    let seenNotifications = JSON.parse(localStorage.getItem('seenGlobalNotifications')) || [];
+                    if (!seenNotifications.includes(notificationId)) {
+                        showNotification(message);
+                        seenNotifications.push(notificationId);
+                        localStorage.setItem('seenGlobalNotifications', JSON.stringify(seenNotifications));
+                    }
+                });
+            }
+            
+            // Initial calls
+            listenForNotifications();
+            listenForGlobalNotifications();
+
+        });
+    </script>
+</body>
+</html>
