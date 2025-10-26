@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>ARQ Toolkit</title>
+
+  <!-- Google font used in original -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* === Original CSS preserved (no UI change) === */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      text-align: center;
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      transition: background-color 0.5s, box-shadow 0.5s;
+    }
+    .title {
+      font-size: 2.8rem;
+      font-weight: 700;
+      background: linear-gradient(45deg, #007bff, #6f42c1);
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      color: #6c757d;
+      margin-bottom: 30px;
+      font-size: 1rem;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 2fr));
+      gap: 10px;
+      justify-items: center;
+      padding: 0 10px;
+    }
+    .tool-box {
+      width: 100%;
+      max-width: 100px;
+      padding: 20px 15px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      transition: background 0.5s, box-shadow 0.5s;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    .tool-box:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+    .tool-icon { width: 70px; height: 70px; object-fit: contain; margin-bottom: 12px; border-radius: 10px; }
+    .tool-name { font-size: 0.9rem; font-weight: 600; word-break: break-word; text-align: center; line-height: 1.3; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e9ecef; transition: border-top 0.5s; }
+    .footer-button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: linear-gradient(45deg, #45deg, #007bff, #6f42c1);
+      color: white;
+      text-decoration: none;
+      border-radius: 40px;
+      box-shadow: 0 40px 0;
+      transition: 0.3s;
+      font-weight: bold;
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+    .footer-button:hover { transform: translateY(-2px); }
+    .watermark { color: #aaa; font-size: 0.85rem; margin-top: 8px; }
+
+    /* Dark tool theme kept */
+    .container { background: #1e1e1e; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .tool-box { background: #2d2d2d; border: 1px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-left: 4px solid #007bff; }
+    .tool-box:hover { border-color: #007bff; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    .tool-name { color: #e9ecef; }
+
+    @media (max-width: 600px) {
+      .title { font-size: 2rem; }
+      .subtitle { margin-bottom: 20px; }
+      .tool-grid { gap: 15px; }
+      .tool-box { max-width: 90%; padding: 15px; }
+      .tool-icon { width: 60px; height: 60px; }
+      .tool-name { font-size: 0.85rem; }
+      .footer-button { padding: 10px 20px; font-size: 0.9rem; }
+    }
+
+    /* === Notification neon banner styles === */
+    #notification-banner {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      min-width: 320px;
+      max-width: calc(100% - 40px);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 24px rgba(0,255,255,0.04) inset;
+      backdrop-filter: blur(6px);
+      color: white;
+      gap: 12px;
+    }
+    #notification-banner .content {
+      text-align: left;
+    }
+    #notification-banner .title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    #notification-banner .message { font-size: 0.9rem; opacity: 0.95; }
+    #notification-banner .close-btn {
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: white;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    #notification-banner.neon {
+      box-shadow: 0 6px 30px rgba(0,0,0,0.6), 0 0 20px rgba(0,191,255,0.08), 0 0 40px rgba(111,66,193,0.06) inset;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Notification banner (neon glass style) -->
+  <div id="notification-banner" class="neon" role="status" aria-live="polite">
+    <div class="content">
+      <div class="title" id="notif-title"></div>
+      <div class="message" id="notif-message"></div>
+    </div>
+    <div>
+      <button id="notif-close" class="close-btn">Close</button>
+    </div>
+  </div>
+
+  <!-- Main container (original UI) -->
+  <div class="container" id="main-container">
+    <div class="title">ARQ Toolkit</div>
+    <div class="subtitle">All in One Toolkit By ARQ</div>
+
+    <!-- dynamic tool grid will be populated by JS -->
+    <div class="tool-grid" id="tool-grid">
+      <!-- If DB is empty, we'll show fallback tools (kept for compatibility) -->
+    </div>
+
+    <div class="footer">
+      <a href="https://whatsapp.com/channel/0029VbAzazM2kNFp4p1qSV2P" target="_blank" class="footer-button">Join My WhatsApp Channel</a>
+      <div class="watermark">By ARQ</div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs (compat for simple Realtime DB usage) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    /***** Firebase config (your provided config) *****/
+    const firebaseConfig = {
+      apiKey: "AIzaSyD9bnqhwuQEzxaQaYlW0an68iqWQfXIp5w",
+      authDomain: "ask-jarvis-cgy2x.firebaseapp.com",
+      databaseURL: "https://ask-jarvis-cgy2x-default-rtdb.firebaseio.com",
+      projectId: "ask-jarvis-cgy2x",
+      storageBucket: "ask-jarvis-cgy2x.firebasestorage.app",
+      messagingSenderId: "169989121206",
+      appId: "1:169989121206:web:5b8bb8d5f0a99766cdf217"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    /***** Utilities for safe DOM creation *****/
+    function escapeHtml(s) {
+      if (!s && s !== 0) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    /***** Tools rendering logic *****/
+    const toolGrid = document.getElementById('tool-grid');
+
+    // Render a tool item from an object { name, url, icon }
+    function renderTool(key, data) {
+      const existing = document.querySelector('[data-tool-key="' + key + '"]');
+      if (existing) {
+        // update
+        const img = existing.querySelector('img.tool-icon');
+        const nameDiv = existing.querySelector('.tool-name');
+        if (img && data.icon) img.src = data.icon;
+        if (nameDiv) nameDiv.textContent = data.name || '';
+        existing.href = data.url || '#';
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.className = 'tool-box';
+      a.setAttribute('data-tool-key', key);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.href = data.url || '#';
+
+      const img = document.createElement('img');
+      img.className = 'tool-icon';
+      img.alt = escapeHtml(data.name || 'tool');
+      img.src = data.icon || 'https://i.ibb.co/LDc4sJqs/images-1-removebg-preview.png';
+
+      const div = document.createElement('div');
+      div.className = 'tool-name';
+      div.textContent = data.name || 'Unnamed Tool';
+
+      a.appendChild(img);
+      a.appendChild(div);
+
+      toolGrid.appendChild(a);
+    }
+
+    // Remove a tool by key
+    function removeToolElement(key) {
+      const el = document.querySelector('[data-tool-key="' + key + '"]');
+      if (el) el.remove();
+    }
+
+    // Listen to /tools realtime updates
+    const toolsRef = db.ref('tools');
+    toolsRef.on('child_added', snapshot => {
+      const key = snapshot.key;
+      const data = snapshot.val() || {};
+      renderTool(key, data);
+    });
+    toolsRef.on('child_changed', snapshot => {
+      const key = snapshot.key;
+      const data = snapshot.val() || {};
+      renderTool(key, data);
+    });
+    toolsRef.on('child_removed', snapshot => {
+      removeToolElement(snapshot.key);
+    });
+
+    // Initial fallback: If DB empty for a few seconds, populate with embedded default tools
+    // (keeps UI same if admin hasn't added tools yet)
+    toolsRef.once('value').then(snap => {
+      if (!snap.exists()) {
+        // default set (mirrors the original static set you had)
+        const defaults = [
+          { name: "Quran Recitation", url: "https://ftgmtools.pages.dev/quranpask", icon: "https://i.ibb.co/LDc4sJqs/images-1-removebg-preview.png" },
+          { name: "Temp Mail", url: "https://ftgmtools.pages.dev/t-mail", icon: "https://i.postimg.cc/GtQJhMTp/IMG-20250609-WA0103-removebg-preview.png" },
+          { name: "Image Link Creator", url: "https://ftgmtools.pages.dev/itol", icon: "https://i.postimg.cc/3JBtfs62/FTGM-ITL-Tool.png" },
+          { name: "HTML Encryptor", url: "https://ftgmtools.pages.dev/html-encryptor", icon: "https://i.postimg.cc/PqKVLBbt/FTGM-HTML-Locker.png" },
+          { name: "Link Locker", url: "https://url-locker.vercel.app/", icon: "https://i.postimg.cc/plDV9gXk/IMG-20250610-WA0028-removebg-preview.png" },
+          { name: "Link Shortener", url: "https://ftgm-url-shortener.vercel.app/", icon: "https://i.postimg.cc/KcLfs51p/IMG-20250610-WA0031-removebg-preview.png" },
+          { name: "Stylish Font Maker", url: "https://ftgmtools.pages.dev/fonts", icon: "https://i.postimg.cc/vTP6ftqx/FTGMFont.png" },
+          { name: "TT Saver", url: "https://ftgmtools.pages.dev/ttsave", icon: "https://i.postimg.cc/gk2DkbMQ/20250611-105755.png" },
+          { name: "Image Icon Maker", url: "https://ftgmtools.pages.dev/img2ico", icon: "https://i.postimg.cc/3x8g2Dkb/ICON-MAKER.png" },
+          { name: "Text To Speech", url: "https://ftgmtools.pages.dev/iivoi ce", icon: "https://i.postimg.cc/FszyXgzQ/20250611-110237-1.png" },
+          { name: "Coming Soon", url: "https://ftgmtools.pages.dev/comingsoon", icon: "https://i.postimg.cc/bNPg35SZ/20250611-110323.png" }
+        ];
+        // push defaults to UI immediately (not to DB)
+        defaults.forEach(d => {
+          // create a pseudo-key so they don't clash with DB keys
+          const pseudo = 'default-' + Math.random().toString(36).slice(2,9);
+          renderTool(pseudo, d);
+        });
+      }
+    }).catch(err => {
+      console.error('Error checking tools:', err);
+    });
+
+    /***** Notifications logic *****/
+    const banner = document.getElementById('notification-banner');
+    const notifTitle = document.getElementById('notif-title');
+    const notifMessage = document.getElementById('notif-message');
+    const notifClose = document.getElementById('notif-close');
+
+    // Keep track of seen notifications (for 'once' type)
+    const SEEN_KEY = 'arq_seen_notifications_v1';
+    function getSeenSet() {
+      try {
+        const raw = localStorage.getItem(SEEN_KEY);
+        if (!raw) return new Set();
+        const arr = JSON.parse(raw || '[]');
+        return new Set(Array.isArray(arr) ? arr : []);
+      } catch (e) {
+        return new Set();
+      }
+    }
+    function saveSeenSet(set) {
+      try {
+        localStorage.setItem(SEEN_KEY, JSON.stringify(Array.from(set)));
+      } catch (e) {}
+    }
+
+    // Show a notification object: { title, message, color, show } with id
+    function showNotification(id, obj) {
+      if (!obj) return;
+      const showType = obj.show || 'always'; // 'always' or 'once'
+      const seen = getSeenSet();
+      if (showType === 'once' && seen.has(id)) return; // already shown for this user
+
+      // apply color (if provided) to background/gradient
+      const color = obj.color || '#00bfff';
+      // create a subtle gradient using the color
+      banner.style.background = `linear-gradient(135deg, rgba(0,0,0,0.35), ${color})`;
+      // adjust box-shadow neon-ish
+      banner.style.boxShadow = `0 8px 40px rgba(0,0,0,0.6), 0 0 24px ${color}55`;
+      notifTitle.textContent = obj.title || '';
+      notifMessage.textContent = obj.message || '';
+      banner.style.display = 'flex';
+      banner.style.opacity = '1';
+      banner.style.transform = 'translateY(0)';
+
+      // if showType is 'once' then mark as seen when user closes it or after close
+      const markSeen = () => {
+        if (showType === 'once') {
+          seen.add(id);
+          saveSeenSet(seen);
+        }
+      };
+
+      // close handler
+      notifClose.onclick = () => {
+        banner.style.display = 'none';
+        markSeen();
+      };
+    }
+
+    // hide banner helper
+    function hideBanner() {
+      banner.style.display = 'none';
+    }
+
+    // Listen to /notifications node (we'll display the most recent active notification)
+    const notRef = db.ref('notifications');
+    // We'll keep a simple rule: get the latest notification by push-key order that is not marked deleted.
+    function handleNotificationsSnapshot(snapshot) {
+      if (!snapshot.exists()) {
+        hideBanner();
+        return;
+      }
+      // Convert snapshot to array sorted by key (push keys are chronological)
+      const arr = [];
+      snapshot.forEach(child => {
+        const key = child.key;
+        const val = child.val();
+        // val structure: { title, message, color, show } (show = 'always'|'once')
+        arr.push({ key, val });
+      });
+      if (arr.length === 0) {
+        hideBanner();
+        return;
+      }
+      // choose last (most recent)
+      const last = arr[arr.length - 1];
+      showNotification(last.key, last.val);
+    }
+
+    notRef.on('value', handleNotificationsSnapshot, err => {
+      console.error('Notification read error', err);
+    });
+
+    // If user closes manually, banner will hide and 'once' will be recorded at close
+    // Optionally, we could auto-hide after some time for 'always' type; but requirement was neon banner: left as manual close.
+
+    // Accessibility: close on ESC
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') hideBanner();
+    });
+
+    // When page loads, the notifications handler will run and show the latest notification if present.
+
+    /***** Optional: observe connectivity and show small indicator (not modifying UI) *****/
+    window.addEventListener('online', () => { /* could show small toast */ });
+    window.addEventListener('offline', () => { /* could show small toast */ });
+
+    /***** Debug helper console note (remove in production) *****/
+    console.log('ARQ Toolkit — Firebase realtime integration active');
+
+  </script>
+</body>
+</html>
