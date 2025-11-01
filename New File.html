@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instant HTML Host</title>
+<style>
+  body {
+    font-family: "Poppins", sans-serif;
+    background: #0d1117;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h1 {
+    color: #00bfff;
+  }
+  textarea {
+    width: 90%;
+    height: 250px;
+    background: #161b22;
+    color: #00ffb3;
+    border: 1px solid #333;
+    padding: 10px;
+    border-radius: 10px;
+    resize: none;
+  }
+  input, button {
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+  }
+  input[type="file"], input[type="text"] {
+    background: #161b22;
+    color: #ccc;
+    width: 80%;
+  }
+  button {
+    background: #00bfff;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+  }
+  button:hover {
+    background: #0093cc;
+  }
+  iframe {
+    width: 90%;
+    height: 250px;
+    background: white;
+    border-radius: 10px;
+    margin-top: 15px;
+  }
+  .link-box {
+    background: #161b22;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🚀 Instant HTML Host</h1>
+
+<div id="editor">
+  <input type="text" id="title" placeholder="Enter Page Title (optional)">
+  <input type="text" id="customId" placeholder="Custom Link Name (optional)">
+  <textarea id="htmlCode" placeholder="Write your HTML code here..."></textarea><br>
+  <input type="file" id="fileUpload" accept=".html"><br>
+  <button id="previewBtn">Preview</button>
+  <button id="hostBtn">Host & Get Link</button>
+  <iframe id="previewFrame"></iframe>
+  <div class="link-box" id="result"></div>
+</div>
+
+<iframe id="viewerFrame" style="display:none; width:100%; height:90vh; border:none;"></iframe>
+
+<script type="module">
+  // --- Firebase Config ---
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD9bnqhwuQEzxaQaYlW0an68iqWQfXIp5w",
+    authDomain: "ask-jarvis-cgy2x.firebaseapp.com",
+    databaseURL: "https://ask-jarvis-cgy2x-default-rtdb.firebaseio.com",
+    projectId: "ask-jarvis-cgy2x",
+    storageBucket: "ask-jarvis-cgy2x.firebasestorage.app",
+    messagingSenderId: "169989121206",
+    appId: "1:169989121206:web:5b8bb8d5f0a99766cdf217"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // --- Detect Mode (Viewer or Editor) ---
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageId = urlParams.get("id");
+
+  const editor = document.getElementById("editor");
+  const viewer = document.getElementById("viewerFrame");
+
+  if (pageId) {
+    // Viewer mode
+    editor.style.display = "none";
+    viewer.style.display = "block";
+
+    const dbRef = ref(db);
+    get(child(dbRef, `pages/${pageId}`)).then((snapshot) => {
+      if (snapshot.exists()) {
+        viewer.srcdoc = snapshot.val().code;
+        document.title = snapshot.val().title || "Hosted Page";
+      } else {
+        viewer.srcdoc = "<h2 style='color:red;text-align:center;'>❌ Page not found!</h2>";
+      }
+    });
+  }
+
+  // --- Editor Mode Functionality ---
+  const htmlBox = document.getElementById("htmlCode");
+  const fileUpload = document.getElementById("fileUpload");
+  const previewFrame = document.getElementById("previewFrame");
+  const resultBox = document.getElementById("result");
+
+  // File Upload → Extract HTML Code
+  fileUpload.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file && file.name.endsWith(".html")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        htmlBox.value = event.target.result;
+      };
+      reader.readAsText(file);
+    } else {
+      alert("Please upload only .html file");
+    }
+  });
+
+  // Preview Button
+  document.getElementById("previewBtn").onclick = () => {
+    previewFrame.srcdoc = htmlBox.value;
+  };
+
+  // Short ID Generator
+  function shortID(len = 6) {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let id = "";
+    for (let i = 0; i < len; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+    return id;
+  }
+
+  // Host Button
+  document.getElementById("hostBtn").onclick = async () => {
+    const code = htmlBox.value.trim();
+    if (!code) return alert("Please write or upload HTML code!");
+
+    const title = document.getElementById("title").value || "Untitled Page";
+    let custom = document.getElementById("customId").value.trim();
+
+    // If user didn’t set a custom ID → generate random
+    if (!custom) custom = shortID();
+
+    const dbRef = ref(db);
+    const snap = await get(child(dbRef, "pages/" + custom));
+    if (snap.exists()) {
+      alert("⚠️ This name already exists! Please choose another name.");
+      return;
+    }
+
+    await set(ref(db, "pages/" + custom), { title, code });
+
+    const hostLink = `${window.location.origin}${window.location.pathname}?id=${custom}`;
+    resultBox.innerHTML = `✅ Hosted Successfully!<br>
+      Title: <b>${title}</b><br>
+      Link: <a href="${hostLink}" target="_blank">${hostLink}</a>`;
+  };
+</script>
+
+</body>
+</html>
